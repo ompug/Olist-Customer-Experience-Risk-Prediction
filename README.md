@@ -25,10 +25,21 @@ ML_FINAL_PROJECT/
 |   |-- comparison_table.csv     # Held-out model comparison metrics
 |   |-- model_best.pkl           # Serialized best model pipeline
 |   `-- df_features.csv          # Final processed modeling table
+|-- scripts/
+|   `-- run_baseline_pipeline.py # Lightweight extracted pipeline runner
+|-- src/
+|   `-- cx_risk/                 # Reusable data, feature, model, and evaluation code
+|-- tests/                       # Lightweight pipeline validation checks
 |-- olist_cx_risk.ipynb          # Main notebook/report
 |-- requirements.txt             # Python dependencies
 `-- README.md
 ```
+
+## Portfolio Refactor
+
+The original class-project notebook, `olist_cx_risk.ipynb`, is preserved as the submitted report artifact. A first safe refactor is now underway on branch `beyond-final-project`: stable reusable notebook logic has been extracted into `src/cx_risk/`, with a simple runnable baseline script in `scripts/run_baseline_pipeline.py` and lightweight validation checks in `tests/`.
+
+This refactor does not introduce new model families or portfolio features. It keeps the notebook's target definition, review deduplication rule, order-level feature construction, preprocessing approach, and baseline model families intact.
 
 ## Method Summary
 
