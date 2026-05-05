@@ -87,24 +87,57 @@ PRIMARY_FEATURE_COLUMNS = [
 ]
 
 FORBIDDEN_LEAKAGE_COLUMNS = [
+    "review_id",
     "review_score",
     "review_comment_title",
     "review_comment_message",
     "review_creation_date",
     "review_answer_timestamp",
+    "n_review_rows",
+    "n_distinct_review_ids",
     "order_delivered_customer_date",
     "order_delivered_carrier_date",
+    "actual_delivery_days",
+    "actual_delivery_time",
     "actual_lateness",
     "delivery_lateness",
+    "late_delivery_flag",
+    "days_late",
+    "carrier_delivery_days",
+    "carrier_handoff_delay",
+    "carrier_handoff_days",
 ]
+
+RAW_IDENTIFIER_COLUMNS = [
+    "order_id",
+    "customer_id",
+    "customer_unique_id",
+    "product_id",
+    "seller_id",
+]
+
+
+def find_forbidden_columns(columns, include_raw_ids: bool = True):
+    forbidden = set(FORBIDDEN_LEAKAGE_COLUMNS)
+    if include_raw_ids:
+        forbidden.update(RAW_IDENTIFIER_COLUMNS)
+    return sorted(forbidden.intersection(columns))
+
+
+def assert_no_forbidden_columns(columns, include_raw_ids: bool = True) -> None:
+    present = find_forbidden_columns(columns, include_raw_ids=include_raw_ids)
+    if present:
+        raise ValueError(f"Forbidden leakage or raw identifier columns present in feature set: {present}")
+
+
+def validate_primary_feature_list() -> None:
+    assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS, include_raw_ids=True)
 
 
 def split_features_target(modeling_df):
     X = modeling_df.drop(columns=[TARGET_COLUMN])
     y = modeling_df[TARGET_COLUMN].copy()
-    drop_columns = sorted(set(X.columns).intersection(FORBIDDEN_LEAKAGE_COLUMNS))
-    if drop_columns:
-        X = X.drop(columns=drop_columns)
+    assert_no_forbidden_columns(X.columns, include_raw_ids=True)
     return X, y
 
 
@@ -142,4 +175,3 @@ def build_preprocessor(numeric_features, categorical_features):
         remainder="drop",
         verbose_feature_names_out=True,
     )
-

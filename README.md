@@ -1,10 +1,10 @@
 # Olist Customer-Experience Risk Prediction
 
-This project predicts whether an Olist e-commerce order is at risk of receiving a low customer review using only leakage-safe information available before the customer submits a review.
+This project predicts whether an Olist e-commerce order is at risk of receiving a low customer review using leakage-safe information available before the customer submits a review.
 
-The main deliverable is `olist_cx_risk.ipynb`, a report-style notebook built phase by phase from the project blueprint in `.cursor/project_blueprint.md`.
+The original class-project deliverable is preserved as `olist_cx_risk.ipynb`. Portfolio-oriented reusable code is being developed on branch `beyond-final-project` under `src/cx_risk/`.
 
-## Business Question
+## Business Problem
 
 Can an e-commerce platform identify orders that are likely to result in poor customer experience early enough to support proactive intervention?
 
@@ -13,7 +13,23 @@ The target is:
 - `low_review = 1` when `review_score <= 2`
 - `low_review = 0` when `review_score >= 3`
 
-The primary model intentionally excludes review text, review timestamps, actual customer delivery date, actual lateness, and carrier handoff timing.
+## Data
+
+Raw Olist CSV files are expected in `olist_data/` at the project root.
+
+Required files:
+
+- `olist_customers_dataset.csv`
+- `olist_geolocation_dataset.csv`
+- `olist_order_items_dataset.csv`
+- `olist_order_payments_dataset.csv`
+- `olist_order_reviews_dataset.csv`
+- `olist_orders_dataset.csv`
+- `olist_products_dataset.csv`
+- `olist_sellers_dataset.csv`
+- `product_category_name_translation.csv`
+
+The extracted pipeline validates these files before loading data.
 
 ## Project Structure
 
@@ -21,57 +37,103 @@ The primary model intentionally excludes review text, review timestamps, actual 
 ML_FINAL_PROJECT/
 |-- olist_data/                  # Raw Olist CSV files
 |-- outputs/
-|   |-- figures/                 # EDA, evaluation, and interpretation figures
-|   |-- comparison_table.csv     # Held-out model comparison metrics
-|   |-- model_best.pkl           # Serialized best model pipeline
-|   `-- df_features.csv          # Final processed modeling table
+|   |-- figures/                 # Notebook EDA/evaluation figures
+|   |-- comparison_table.csv     # Notebook model comparison artifact
+|   |-- model_best.pkl           # Notebook serialized best model artifact
+|   `-- df_features.csv          # Notebook processed modeling table artifact
 |-- scripts/
-|   `-- run_baseline_pipeline.py # Lightweight extracted pipeline runner
+|   `-- run_baseline_pipeline.py # Reusable baseline pipeline runner
 |-- src/
-|   `-- cx_risk/                 # Reusable data, feature, model, and evaluation code
-|-- tests/                       # Lightweight pipeline validation checks
-|-- olist_cx_risk.ipynb          # Main notebook/report
+|   `-- cx_risk/
+|       |-- config.py            # Paths, constants, target settings
+|       |-- data.py              # Raw data loading and timestamp parsing
+|       |-- features.py          # Order-level feature table construction
+|       |-- preprocessing.py     # Feature list, leakage guard, sklearn preprocessing
+|       |-- models.py            # Baseline model pipeline factories
+|       |-- evaluation.py        # Classification metric helpers
+|       `-- utils.py             # Validation and artifact helpers
+|-- tests/
+|   `-- test_data_pipeline.py    # Lightweight pipeline invariant tests
+|-- olist_cx_risk.ipynb          # Original notebook/report artifact
 |-- requirements.txt             # Python dependencies
+|-- Makefile                     # Convenience commands
 `-- README.md
 ```
 
-## Portfolio Refactor
-
-The original class-project notebook, `olist_cx_risk.ipynb`, is preserved as the submitted report artifact. A first safe refactor is now underway on branch `beyond-final-project`: stable reusable notebook logic has been extracted into `src/cx_risk/`, with a simple runnable baseline script in `scripts/run_baseline_pipeline.py` and lightweight validation checks in `tests/`.
-
-This refactor does not introduce new model families or portfolio features. It keeps the notebook's target definition, review deduplication rule, order-level feature construction, preprocessing approach, and baseline model families intact.
-
-## Method Summary
-
-The notebook builds an order-level modeling table from the relational Olist dataset, defines a binary low-review target, engineers leakage-safe purchase-time features, and compares three sklearn model families:
-
-- Logistic Regression
-- Random Forest
-- HistGradientBoostingClassifier
-
-All models use a shared preprocessing pipeline with numeric imputation/scaling and categorical imputation/one-hot encoding. The final evaluation uses a held-out stratified test split and reports accuracy, precision, recall, F1, ROC-AUC, PR-AUC, confusion matrices, ROC curves, and precision-recall curves.
-
-## Main Findings
-
-`HistGradientBoostingClassifier` was the strongest overall model by held-out ROC-AUC and class-1 F1. Logistic Regression had the highest class-1 recall by a small margin at the default threshold, but HGB provided a better overall balance for intervention use.
-
-The strongest risk-associated signals included product category, customer state, seller state, purchase month, freight cost, item count, estimated delivery window, and average freight.
-
-## Reproducibility
+## Setup
 
 Use the course conda environment if available:
 
 ```bash
 conda activate itcs-3156
-```
-
-If recreating the environment manually, use a stable Python version supported by the pinned scientific stack, then install dependencies and run the notebook top-to-bottom:
-
-```bash
 pip install -r requirements.txt
 ```
 
-The project was validated in the `itcs-3156` conda environment used for the course workspace. Avoid running it with the system Python 3.14 interpreter, which may not have compatible prebuilt wheels for the pinned dependencies.
+Or create a fresh environment with a stable Python version supported by the pinned scientific stack:
+
+```bash
+conda create -n olist-cx-risk python=3.9
+conda activate olist-cx-risk
+pip install -r requirements.txt
+```
+
+Avoid running the project with the system Python 3.14 interpreter unless all pinned dependencies are installed and compatible.
+
+## Run The Baseline Pipeline
+
+From the project root:
+
+```bash
+python scripts/run_baseline_pipeline.py
+```
+
+Equivalent Makefile command:
+
+```bash
+make baseline
+```
+
+The script loads raw data, builds the order-level modeling table, applies the leakage guard, trains the same three baseline model families used in the notebook, and prints a compact metrics table:
+
+- Logistic Regression
+- Random Forest
+- HistGradientBoostingClassifier
+
+## Run Tests
+
+From the project root:
+
+```bash
+python -m pytest -q
+```
+
+Equivalent Makefile command:
+
+```bash
+make test
+```
+
+The tests intentionally stay lightweight and check only critical pipeline invariants:
+
+- required raw files exist
+- loaded tables are non-empty
+- modeling table has unique `order_id`
+- `low_review` exists and has both classes
+- the primary feature list excludes forbidden leakage columns
+
+## Leakage-Safe Primary Modeling
+
+The primary model excludes review-derived fields, target-source fields, raw identifiers, and actual-delivery-derived fields from the feature set. This includes review text, review timestamps, review scores, review diagnostics, actual customer delivery date, carrier handoff date, and lateness-style fields.
+
+The production leakage guard lives in `src/cx_risk/preprocessing.py` and is called before model training in `scripts/run_baseline_pipeline.py`.
+
+## Notebook Artifact
+
+`olist_cx_risk.ipynb` remains the original class-project report. The notebook includes EDA, narrative validation tables, plots, final model artifacts, and interpretation/error-analysis sections that have not all been migrated into reusable modules yet.
+
+## Current Scope
+
+This refactor does not introduce new model families, new features, dashboard code, or inference APIs. It stabilizes the existing notebook logic into reusable Python modules so future portfolio work can proceed safely.
 
 ## Limitations
 

@@ -13,13 +13,19 @@ from cx_risk.data import load_raw_data
 from cx_risk.evaluation import create_model_comparison_table
 from cx_risk.features import build_modeling_dataframe
 from cx_risk.models import create_model_pipelines, fit_baseline_models, predict_model_outputs
-from cx_risk.preprocessing import build_preprocessor, identify_feature_types, split_features_target
+from cx_risk.preprocessing import (
+    assert_no_forbidden_columns,
+    build_preprocessor,
+    identify_feature_types,
+    split_features_target,
+)
 
 
 def main() -> None:
     tables = load_raw_data()
     modeling_df = build_modeling_dataframe(tables)
     X, y = split_features_target(modeling_df)
+    assert_no_forbidden_columns(X.columns)
     numeric_features, categorical_features = identify_feature_types(X)
     preprocessor = build_preprocessor(numeric_features, categorical_features)
 
@@ -46,4 +52,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

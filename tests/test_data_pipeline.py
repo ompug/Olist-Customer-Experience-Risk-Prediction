@@ -7,7 +7,11 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from cx_risk.config import DATA_DIR, DATA_FILES, TARGET_COLUMN
 from cx_risk.data import load_raw_data, validate_required_files
 from cx_risk.features import build_modeling_dataframe
-from cx_risk.preprocessing import FORBIDDEN_LEAKAGE_COLUMNS, PRIMARY_FEATURE_COLUMNS
+from cx_risk.preprocessing import (
+    PRIMARY_FEATURE_COLUMNS,
+    assert_no_forbidden_columns,
+    validate_primary_feature_list,
+)
 
 
 def test_required_files_exist():
@@ -26,8 +30,9 @@ def test_modeling_table_target_and_unique_order_id():
     modeling_df = build_modeling_dataframe(tables, include_order_id=True)
     assert modeling_df["order_id"].is_unique
     assert TARGET_COLUMN in modeling_df.columns
-    assert set(modeling_df[TARGET_COLUMN].unique()).issubset({0, 1})
+    assert set(modeling_df[TARGET_COLUMN].unique()) == {0, 1}
 
 
 def test_primary_features_exclude_forbidden_leakage_columns():
-    assert not set(FORBIDDEN_LEAKAGE_COLUMNS).intersection(PRIMARY_FEATURE_COLUMNS)
+    validate_primary_feature_list()
+    assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS)
