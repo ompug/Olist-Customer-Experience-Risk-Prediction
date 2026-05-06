@@ -1,6 +1,7 @@
 """Validation split utilities."""
 
 from dataclasses import dataclass
+from typing import Optional
 
 import pandas as pd
 
@@ -38,6 +39,7 @@ def temporal_train_test_split(
     modeling_df: pd.DataFrame,
     timestamp_column: str = "order_purchase_timestamp",
     train_size: float = 0.80,
+    feature_columns: Optional[list[str]] = None,
     return_summary: bool = False,
 ):
     """Split orders chronologically, training on earlier purchases and testing on later ones."""
@@ -48,7 +50,8 @@ def temporal_train_test_split(
     if not 0 < train_size < 1:
         raise ValueError("train_size must be between 0 and 1.")
 
-    missing_features = [column for column in PRIMARY_FEATURE_COLUMNS if column not in modeling_df.columns]
+    feature_columns = PRIMARY_FEATURE_COLUMNS if feature_columns is None else feature_columns
+    missing_features = [column for column in feature_columns if column not in modeling_df.columns]
     if missing_features:
         raise ValueError(f"Modeling dataframe is missing primary feature columns: {missing_features}")
 
@@ -76,8 +79,8 @@ def temporal_train_test_split(
             "Temporal split boundary failed: max train timestamp must be earlier than min test timestamp."
         )
 
-    X_train = train_df[PRIMARY_FEATURE_COLUMNS].copy()
-    X_test = test_df[PRIMARY_FEATURE_COLUMNS].copy()
+    X_train = train_df[feature_columns].copy()
+    X_test = test_df[feature_columns].copy()
     assert_no_forbidden_columns(X_train.columns)
     assert_no_forbidden_columns(X_test.columns)
     y_train = train_df[TARGET_COLUMN].copy()

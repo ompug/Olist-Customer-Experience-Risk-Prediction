@@ -123,6 +123,41 @@ The time-validation metrics are saved to:
 outputs/tables/time_validation_metrics.csv
 ```
 
+## Portfolio Extension 2: Leakage-Safe Historical Risk Features
+
+Historical marketplace behavior can be useful for customer-experience risk prediction. Sellers, product categories, and customer states can have persistent quality, logistics, or expectation patterns that are visible before a new order receives its review.
+
+These features are easy to compute incorrectly. A simple group average over the full dataset would leak the current order's review outcome and future orders into the feature value. This project avoids that by sorting orders by `order_purchase_timestamp` and computing seller, category, and customer-state aggregates from strictly earlier timestamp buckets only. Orders at the same timestamp are excluded from one another's historical features.
+
+Added historical features:
+
+- `seller_prior_order_count`
+- `seller_prior_low_review_rate`
+- `category_prior_order_count`
+- `category_prior_low_review_rate`
+- `customer_state_prior_order_count`
+- `customer_state_prior_low_review_rate`
+
+Seller history uses an order-level `primary_seller_id` grouping key, defined as the mode seller ID for the order. This raw seller identifier is used only to compute historical aggregates and is not included as a model predictor.
+
+Run the time-aware validation with historical features:
+
+```bash
+python scripts/run_time_validation_with_history.py
+```
+
+Equivalent Makefile command:
+
+```bash
+make time-validation-history
+```
+
+Metrics are saved to:
+
+```text
+outputs/tables/time_validation_with_history_metrics.csv
+```
+
 ## Run Tests
 
 From the project root:

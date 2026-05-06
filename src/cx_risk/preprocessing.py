@@ -86,6 +86,15 @@ PRIMARY_FEATURE_COLUMNS = [
     if column not in REDUNDANT_FEATURE_COLUMNS
 ]
 
+HISTORICAL_FEATURE_COLUMNS = [
+    "seller_prior_order_count",
+    "seller_prior_low_review_rate",
+    "category_prior_order_count",
+    "category_prior_low_review_rate",
+    "customer_state_prior_order_count",
+    "customer_state_prior_low_review_rate",
+]
+
 FORBIDDEN_LEAKAGE_COLUMNS = [
     "review_id",
     "review_score",
@@ -132,6 +141,14 @@ def assert_no_forbidden_columns(columns, include_raw_ids: bool = True) -> None:
 
 def validate_primary_feature_list() -> None:
     assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS, include_raw_ids=True)
+
+
+def get_primary_feature_columns(include_historical_features: bool = False) -> list[str]:
+    feature_columns = list(PRIMARY_FEATURE_COLUMNS)
+    if include_historical_features:
+        feature_columns.extend(HISTORICAL_FEATURE_COLUMNS)
+    assert_no_forbidden_columns(feature_columns, include_raw_ids=True)
+    return feature_columns
 
 
 def split_features_target(modeling_df):

@@ -143,6 +143,7 @@ def aggregate_seller_features(order_items: pd.DataFrame, sellers: pd.DataFrame) 
     return (
         items_sellers.groupby("order_id", as_index=False)
         .agg(
+            primary_seller_id=("seller_id", first_mode),
             n_seller_states=("seller_state", "nunique"),
             primary_seller_state=("seller_state", first_mode),
             primary_seller_city=("seller_city", first_mode),
@@ -211,6 +212,7 @@ def build_modeling_dataframe(
     tables: dict[str, pd.DataFrame],
     include_order_id: bool = False,
     include_split_timestamp: bool = False,
+    include_historical_features: bool = False,
 ) -> pd.DataFrame:
     reviews = deduplicate_reviews(tables["order_reviews"])
     model_df = build_orders_base(tables["orders"], reviews)
@@ -239,12 +241,21 @@ def build_modeling_dataframe(
     ).astype(int)
 
     features_df = add_engineered_features(model_df)
-    from .preprocessing import PRIMARY_FEATURE_COLUMNS
+    if include_historical_features:
+        from .historical import add_historical_risk_features
+
+        features_df = add_historical_risk_features(features_df)
+
+    from .preprocessing import get_primary_feature_columns
+
+    feature_columns = get_primary_feature_columns(
+        include_historical_features=include_historical_features,
+    )
 
     columns = (
         (["order_id"] if include_order_id else [])
         + (["order_purchase_timestamp"] if include_split_timestamp else [])
-        + PRIMARY_FEATURE_COLUMNS
+        + feature_columns
         + [TARGET_COLUMN]
     )
     missing = [column for column in columns if column not in features_df.columns]
