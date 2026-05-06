@@ -8,11 +8,13 @@ from .utils import merge_order_level, require_unique_key
 
 
 def first_mode(series: pd.Series):
+    """Return the first non-null mode for deterministic order-level aggregation."""
     modes = series.dropna().mode()
     return modes.iloc[0] if not modes.empty else np.nan
 
 
 def deduplicate_reviews(order_reviews: pd.DataFrame) -> pd.DataFrame:
+    """Deduplicate reviews to one target row per order using the minimum score."""
     reviews = (
         order_reviews.groupby("order_id", as_index=False)
         .agg(
@@ -34,6 +36,7 @@ def deduplicate_reviews(order_reviews: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_orders_base(orders: pd.DataFrame, reviews_deduped: pd.DataFrame) -> pd.DataFrame:
+    """Filter to delivered reviewed orders and attach the binary target."""
     orders_delivered = orders.loc[orders["order_status"] == "delivered"].copy()
     target_columns = ["order_id", "review_score", TARGET_COLUMN, "n_review_rows", "n_distinct_review_ids"]
     orders_base = orders_delivered.merge(
@@ -46,6 +49,7 @@ def build_orders_base(orders: pd.DataFrame, reviews_deduped: pd.DataFrame) -> pd
 
 
 def aggregate_order_items(order_items: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate item and freight values to the order level."""
     items_agg = (
         order_items.groupby("order_id", as_index=False)
         .agg(
@@ -68,6 +72,7 @@ def aggregate_order_items(order_items: pd.DataFrame) -> pd.DataFrame:
 
 
 def aggregate_product_features(order_items: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate translated product and category attributes to the order level."""
     product_columns = [
         "product_id",
         "product_category_name_english",
@@ -107,6 +112,7 @@ def aggregate_product_features(order_items: pd.DataFrame, products: pd.DataFrame
 
 
 def aggregate_payments(order_payments: pd.DataFrame, items_agg: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate payment behavior to the order level."""
     payments_agg = (
         order_payments.groupby("order_id", as_index=False)
         .agg(
@@ -134,6 +140,7 @@ def aggregate_payments(order_payments: pd.DataFrame, items_agg: pd.DataFrame) ->
 
 
 def aggregate_seller_features(order_items: pd.DataFrame, sellers: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate seller geography and primary seller grouping fields by order."""
     items_sellers = order_items.merge(
         sellers[["seller_id", "seller_zip_code_prefix", "seller_city", "seller_state"]],
         on="seller_id",
@@ -153,6 +160,7 @@ def aggregate_seller_features(order_items: pd.DataFrame, sellers: pd.DataFrame) 
 
 
 def add_engineered_features(model_df: pd.DataFrame) -> pd.DataFrame:
+    """Create leakage-safe timing, basket, payment, geography, and product features."""
     features_df = model_df.copy()
     features_df["purchase_year"] = features_df["order_purchase_timestamp"].dt.year
     features_df["purchase_month"] = features_df["order_purchase_timestamp"].dt.month
@@ -214,6 +222,7 @@ def build_modeling_dataframe(
     include_split_timestamp: bool = False,
     include_historical_features: bool = False,
 ) -> pd.DataFrame:
+    """Build the selected order-level modeling table for scripts and tests."""
     reviews = deduplicate_reviews(tables["order_reviews"])
     model_df = build_orders_base(tables["orders"], reviews)
     model_df = model_df.drop(

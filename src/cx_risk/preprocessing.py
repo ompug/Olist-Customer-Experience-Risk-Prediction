@@ -127,6 +127,7 @@ RAW_IDENTIFIER_COLUMNS = [
 
 
 def find_forbidden_columns(columns, include_raw_ids: bool = True):
+    """Return forbidden leakage or raw-ID columns present in a feature list."""
     forbidden = set(FORBIDDEN_LEAKAGE_COLUMNS)
     if include_raw_ids:
         forbidden.update(RAW_IDENTIFIER_COLUMNS)
@@ -134,16 +135,19 @@ def find_forbidden_columns(columns, include_raw_ids: bool = True):
 
 
 def assert_no_forbidden_columns(columns, include_raw_ids: bool = True) -> None:
+    """Raise if a feature list includes leakage columns or raw identifiers."""
     present = find_forbidden_columns(columns, include_raw_ids=include_raw_ids)
     if present:
         raise ValueError(f"Forbidden leakage or raw identifier columns present in feature set: {present}")
 
 
 def validate_primary_feature_list() -> None:
+    """Validate the default primary feature list against the leakage guard."""
     assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS, include_raw_ids=True)
 
 
 def get_primary_feature_columns(include_historical_features: bool = False) -> list[str]:
+    """Return model feature columns, optionally including historical features."""
     feature_columns = list(PRIMARY_FEATURE_COLUMNS)
     if include_historical_features:
         feature_columns.extend(HISTORICAL_FEATURE_COLUMNS)
@@ -152,6 +156,7 @@ def get_primary_feature_columns(include_historical_features: bool = False) -> li
 
 
 def split_features_target(modeling_df):
+    """Split a modeling table into leakage-safe X and target y."""
     X = modeling_df.drop(columns=[TARGET_COLUMN])
     y = modeling_df[TARGET_COLUMN].copy()
     assert_no_forbidden_columns(X.columns, include_raw_ids=True)
@@ -159,6 +164,7 @@ def split_features_target(modeling_df):
 
 
 def identify_feature_types(X):
+    """Identify numeric and categorical feature columns by pandas dtype."""
     numeric_features = X.select_dtypes(include=["number", "bool"]).columns.tolist()
     categorical_features = X.select_dtypes(include=["object", "category", "string"]).columns.tolist()
     unassigned = sorted(set(X.columns) - set(numeric_features) - set(categorical_features))
@@ -168,6 +174,7 @@ def identify_feature_types(X):
 
 
 def build_preprocessor(numeric_features, categorical_features):
+    """Build the shared sklearn preprocessing transformer."""
     numeric_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),

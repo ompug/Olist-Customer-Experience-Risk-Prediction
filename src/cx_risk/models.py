@@ -13,6 +13,7 @@ from .config import RANDOM_STATE
 
 
 def make_model_pipeline(classifier, preprocessor):
+    """Create a fresh preprocessing-plus-classifier sklearn pipeline."""
     return Pipeline(
         steps=[
             ("preprocessor", clone(preprocessor)),
@@ -22,6 +23,7 @@ def make_model_pipeline(classifier, preprocessor):
 
 
 def create_model_pipelines(preprocessor, random_state: int = RANDOM_STATE):
+    """Create the notebook baseline model families with fixed parameters."""
     return {
         "Logistic Regression": make_model_pipeline(
             LogisticRegression(
@@ -58,6 +60,7 @@ def create_model_pipelines(preprocessor, random_state: int = RANDOM_STATE):
 
 
 def fit_with_warning_capture(model_pipeline, X_fit, y_fit, **fit_params):
+    """Fit a model pipeline and return fit warnings as strings."""
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always")
         model_pipeline.fit(X_fit, y_fit, **fit_params)
@@ -65,6 +68,7 @@ def fit_with_warning_capture(model_pipeline, X_fit, y_fit, **fit_params):
 
 
 def fit_baseline_models(pipelines, X_train, y_train):
+    """Fit all baseline pipelines, including balanced HGB sample weights."""
     fitted = {}
     warnings_by_model = {}
     for name, pipeline in pipelines.items():
@@ -77,6 +81,7 @@ def fit_baseline_models(pipelines, X_train, y_train):
 
 
 def predict_model_outputs(fitted_models, X):
+    """Return predicted classes and class-1 probabilities for fitted models."""
     outputs = {}
     for name, model in fitted_models.items():
         y_pred = model.predict(X)
@@ -86,4 +91,3 @@ def predict_model_outputs(fitted_models, X):
             y_proba = np.full(len(y_pred), np.nan)
         outputs[name] = {"y_pred": y_pred, "y_proba": y_proba}
     return outputs
-

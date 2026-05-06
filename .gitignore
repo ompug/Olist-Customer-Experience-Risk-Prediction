@@ -14,6 +14,8 @@ env/
 # Local environment
 .env
 .env.*
+.streamlit/secrets.toml
+.streamlit/cache/
 
 # Generated artifacts
 outputs/*.pkl

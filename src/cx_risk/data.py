@@ -8,6 +8,7 @@ from .config import DATA_DIR, DATA_FILES, DATETIME_COLUMNS
 
 
 def validate_required_files(data_dir: Path = DATA_DIR) -> None:
+    """Raise if any required raw Olist CSV file is missing."""
     missing = [filename for filename in DATA_FILES.values() if not (data_dir / filename).exists()]
     if missing:
         raise FileNotFoundError(f"Missing expected raw data files: {missing}")
@@ -33,4 +34,3 @@ def load_raw_data(data_dir: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
     )
     tables["products"] = products
     return tables
-

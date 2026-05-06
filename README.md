@@ -1,21 +1,83 @@
 # Olist Customer-Experience Risk Prediction
 
-This project predicts whether an Olist e-commerce order is at risk of receiving a low customer review using leakage-safe information available before the customer submits a review.
+Leakage-aware machine learning pipeline and Streamlit dashboard for predicting low-review risk on future e-commerce orders.
 
-The original class-project deliverable is preserved as `olist_cx_risk.ipynb`. Portfolio-oriented reusable code is being developed on branch `beyond-final-project` under `src/cx_risk/`.
+## One-Sentence Summary
+
+This project turns a notebook-only Olist ML final project into a reusable Python codebase that builds an order-level customer-experience risk model, validates it on future orders, and simulates business intervention queues for support teams.
 
 ## Business Problem
 
-Can an e-commerce platform identify orders that are likely to result in poor customer experience early enough to support proactive intervention?
+E-commerce platforms need to identify orders likely to produce poor customer experiences before a customer submits a review. The business question is:
 
-The target is:
+Can we prioritize proactive interventions for orders most likely to receive a low review?
+
+Target definition:
 
 - `low_review = 1` when `review_score <= 2`
 - `low_review = 0` when `review_score >= 3`
 
-## Data
+## Key Result
 
-Raw Olist CSV files are expected in `olist_data/` at the project root.
+Using a time-aware future-order test set with leakage-safe historical features, the best ROC-AUC model was Random Forest at `0.6146`. For intervention planning, the best top-10% queue came from `HistGradientBoostingClassifier`:
+
+- Orders flagged: `1,917`
+- Future low-review orders caught: `451`
+- Precision: `23.53%`
+- Recall: `24.31%`
+- Lift over random selection: `2.43x`
+- Base future low-review rate: `9.68%`
+
+This means the model-created queue is substantially more concentrated with low-review cases than random selection, while still catching about one quarter of all future low-review orders in the test period.
+
+## Dashboard Preview
+
+Run the local Streamlit dashboard:
+
+```bash
+make app
+```
+
+or:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+The dashboard shows:
+
+- Project overview and leakage-safe design
+- Time-aware validation results
+- Historical-feature comparison
+- Intervention simulation curves
+- Threshold tradeoff analysis
+- Reproducibility commands
+
+Screenshots are not fabricated in this repo. To add them:
+
+1. Run `make app`.
+2. Capture the dashboard pages.
+3. Save screenshots in `docs/screenshots/`.
+4. Reference the screenshot paths here once added.
+
+Placeholder directory:
+
+```text
+docs/screenshots/
+```
+
+## Technical Highlights
+
+- Refactored notebook logic into a reusable package under `src/cx_risk/`.
+- Aggregated a relational e-commerce dataset across orders, payments, items, products, sellers, customers, and reviews.
+- Preserved the original random-split baseline while adding more realistic future-order validation.
+- Built leakage-safe historical seller, category, and customer-state risk features using only strictly prior orders.
+- Added threshold and top-k intervention simulation to translate probabilities into business actions.
+- Shipped a lightweight Streamlit dashboard that reads artifacts without retraining models at startup.
+
+## Dataset
+
+This project uses the public Brazilian Olist e-commerce dataset. Raw CSV files are expected in `olist_data/` at the project root.
 
 Required files:
 
@@ -29,47 +91,89 @@ Required files:
 - `olist_sellers_dataset.csv`
 - `product_category_name_translation.csv`
 
-The extracted pipeline validates these files before loading data.
+Raw data files are intentionally ignored by git.
+
+## Methodology
+
+1. Load raw Olist CSVs and parse timestamps.
+2. Deduplicate review rows at order level using the minimum review score.
+3. Define `low_review` from review score.
+4. Filter to delivered orders with review targets.
+5. Aggregate order-item, payment, product, seller, and customer signals to one row per order.
+6. Build leakage-safe primary features.
+7. Train the same model families as the notebook baseline:
+   - Logistic Regression
+   - Random Forest
+   - HistGradientBoostingClassifier
+8. Evaluate random split, time-aware split, time-aware split with historical features, and intervention queues.
+
+## Results
+
+Time-aware validation is intentionally harder than a random split because train orders occur earlier and test orders occur later.
+
+### Time Split Without Historical Features
+
+| Model | ROC-AUC |
+|---|---:|
+| Logistic Regression | 0.5999 |
+| Random Forest | 0.5989 |
+| HistGradientBoostingClassifier | 0.5999 |
+
+### Time Split With Historical Features
+
+| Model | ROC-AUC |
+|---|---:|
+| Logistic Regression | 0.6087 |
+| Random Forest | 0.6146 |
+| HistGradientBoostingClassifier | 0.6075 |
+
+### Intervention Simulation
+
+At the top 10% of future orders ranked by predicted risk:
+
+| Metric | Value |
+|---|---:|
+| Best model | HistGradientBoostingClassifier |
+| Orders flagged | 1,917 |
+| Low-review orders caught | 451 |
+| Precision | 23.53% |
+| Recall | 24.31% |
+| Lift over random | 2.43x |
+| Base low-review rate | 9.68% |
+
+These metrics should be interpreted as prioritization quality, not a claim of causal impact. The simulation shows which orders would be queued for intervention, not whether an intervention would change outcomes.
 
 ## Project Structure
 
 ```text
 ML_FINAL_PROJECT/
-|-- olist_data/                  # Raw Olist CSV files
+|-- app/
+|   `-- streamlit_app.py
+|-- docs/
+|   |-- architecture.md
+|   |-- resume_bullets.md
+|   `-- screenshots/
+|-- olist_data/                  # Raw Olist CSV files, gitignored
 |-- outputs/
-|   |-- figures/                 # Notebook EDA/evaluation figures
-|   |-- comparison_table.csv     # Notebook model comparison artifact
-|   |-- model_best.pkl           # Notebook serialized best model artifact
-|   `-- df_features.csv          # Notebook processed modeling table artifact
+|   |-- figures/                 # Saved notebook and portfolio figures
+|   `-- tables/                  # Validation and intervention CSV artifacts
 |-- scripts/
-|   `-- run_baseline_pipeline.py # Reusable baseline pipeline runner
+|   |-- run_baseline_pipeline.py
+|   |-- run_time_validation.py
+|   |-- run_time_validation_with_history.py
+|   `-- run_intervention_simulation.py
 |-- src/
-|   `-- cx_risk/
-|       |-- config.py            # Paths, constants, target settings
-|       |-- data.py              # Raw data loading and timestamp parsing
-|       |-- features.py          # Order-level feature table construction
-|       |-- preprocessing.py     # Feature list, leakage guard, sklearn preprocessing
-|       |-- models.py            # Baseline model pipeline factories
-|       |-- evaluation.py        # Classification metric helpers
-|       `-- utils.py             # Validation and artifact helpers
+|   `-- cx_risk/                 # Reusable ML pipeline package
 |-- tests/
-|   `-- test_data_pipeline.py    # Lightweight pipeline invariant tests
-|-- olist_cx_risk.ipynb          # Original notebook/report artifact
-|-- requirements.txt             # Python dependencies
-|-- Makefile                     # Convenience commands
+|-- olist_cx_risk.ipynb          # Original class-project notebook artifact
+|-- requirements.txt
+|-- Makefile
 `-- README.md
 ```
 
-## Setup
+## How To Run
 
-Use the course conda environment if available:
-
-```bash
-conda activate itcs-3156
-pip install -r requirements.txt
-```
-
-Or create a fresh environment with a stable Python version supported by the pinned scientific stack:
+Set up an environment:
 
 ```bash
 conda create -n olist-cx-risk python=3.9
@@ -77,149 +181,49 @@ conda activate olist-cx-risk
 pip install -r requirements.txt
 ```
 
-Avoid running the project with the system Python 3.14 interpreter unless all pinned dependencies are installed and compatible.
-
-## Run The Baseline Pipeline
-
-From the project root:
+If using the course environment:
 
 ```bash
-python scripts/run_baseline_pipeline.py
-```
-
-Equivalent Makefile command:
-
-```bash
-make baseline
-```
-
-The script loads raw data, builds the order-level modeling table, applies the leakage guard, trains the same three baseline model families used in the notebook, and prints a compact metrics table:
-
-- Logistic Regression
-- Random Forest
-- HistGradientBoostingClassifier
-
-## Portfolio Extension 1: Time-Aware Validation
-
-The original baseline keeps the random stratified train/test split so results remain comparable to the notebook. Random splits can be optimistic for this business problem because orders from earlier and later periods are mixed across train and test sets, which can hide drift in customer behavior, logistics, product mix, or seller performance.
-
-Time-aware validation trains on the earliest 80% of reviewed delivered orders by `order_purchase_timestamp` and tests on the latest 20%. This better simulates deployment, where a model trained on historical orders must score future orders. The timestamp is used only to create the split and is not included as a raw predictor.
-
-Run it from the project root:
-
-```bash
-python scripts/run_time_validation.py
-```
-
-Equivalent Makefile command:
-
-```bash
-make time-validation
-```
-
-The time-validation metrics are saved to:
-
-```text
-outputs/tables/time_validation_metrics.csv
-```
-
-## Portfolio Extension 2: Leakage-Safe Historical Risk Features
-
-Historical marketplace behavior can be useful for customer-experience risk prediction. Sellers, product categories, and customer states can have persistent quality, logistics, or expectation patterns that are visible before a new order receives its review.
-
-These features are easy to compute incorrectly. A simple group average over the full dataset would leak the current order's review outcome and future orders into the feature value. This project avoids that by sorting orders by `order_purchase_timestamp` and computing seller, category, and customer-state aggregates from strictly earlier timestamp buckets only. Orders at the same timestamp are excluded from one another's historical features.
-
-Added historical features:
-
-- `seller_prior_order_count`
-- `seller_prior_low_review_rate`
-- `category_prior_order_count`
-- `category_prior_low_review_rate`
-- `customer_state_prior_order_count`
-- `customer_state_prior_low_review_rate`
-
-Seller history uses an order-level `primary_seller_id` grouping key, defined as the mode seller ID for the order. This raw seller identifier is used only to compute historical aggregates and is not included as a model predictor.
-
-Run the time-aware validation with historical features:
-
-```bash
-python scripts/run_time_validation_with_history.py
-```
-
-Equivalent Makefile command:
-
-```bash
-make time-validation-history
-```
-
-Metrics are saved to:
-
-```text
-outputs/tables/time_validation_with_history_metrics.csv
-```
-
-## Portfolio Extension 3: Intervention Simulation
-
-Default `0.5` classification thresholds are not enough for an intervention workflow. A support or operations team usually has limited capacity and needs to prioritize a queue of the riskiest future orders, not classify every order with a generic threshold.
-
-This project simulates top-k intervention policies using the time-aware model with historical features. For each model, it evaluates what happens if the business flags the top 1%, 5%, 10%, 15%, 20%, or 25% riskiest future orders. It also evaluates fixed probability thresholds from 0.05 to 0.50.
-
-In this context:
-
-- Precision answers: among flagged orders, what share actually became low-review orders?
-- Recall answers: what share of all future low-review orders did the queue catch?
-- Lift answers: how much better the queue precision is than random selection at the same base rate.
-
-Run the intervention simulation:
-
-```bash
-python scripts/run_intervention_simulation.py
-```
-
-Equivalent Makefile command:
-
-```bash
-make intervention
-```
-
-Output tables:
-
-```text
-outputs/tables/intervention_simulation.csv
-outputs/tables/threshold_analysis.csv
-```
-
-Output figures:
-
-```text
-outputs/figures/intervention_recall_by_flagged_share.png
-outputs/figures/intervention_precision_by_flagged_share.png
-outputs/figures/intervention_lift_by_flagged_share.png
-```
-
-## Portfolio Extension 4: Streamlit Dashboard
-
-The Streamlit dashboard is a lightweight portfolio-facing results viewer. It does not retrain models on startup. Instead, it reads the generated validation and intervention artifacts from `outputs/tables/` and `outputs/figures/`.
-
-Streamlit is included in `requirements.txt`, so install dependencies first:
-
-```bash
+conda activate itcs-3156
 pip install -r requirements.txt
 ```
 
-Run the dashboard locally:
+Run the main commands:
 
 ```bash
-streamlit run app/streamlit_app.py
-```
-
-Equivalent Makefile command:
-
-```bash
+make baseline
+make time-validation
+make time-validation-history
+make intervention
 make app
+make test
 ```
 
-Expected dashboard artifacts:
+Equivalent direct commands:
+
+```bash
+python scripts/run_baseline_pipeline.py
+python scripts/run_time_validation.py
+python scripts/run_time_validation_with_history.py
+python scripts/run_intervention_simulation.py
+streamlit run app/streamlit_app.py
+python -m pytest -q
+```
+
+## Reproducibility Notes
+
+- The project was validated in `itcs-3156` with Python 3.9.
+- Avoid the system Python 3.14 interpreter unless compatible wheels are installed.
+- The Streamlit app does not retrain models; it reads generated artifacts.
+- Generate dashboard artifacts with:
+
+```bash
+make time-validation
+make time-validation-history
+make intervention
+```
+
+Key artifacts:
 
 ```text
 outputs/tables/time_validation_metrics.csv
@@ -231,50 +235,32 @@ outputs/figures/intervention_precision_by_flagged_share.png
 outputs/figures/intervention_lift_by_flagged_share.png
 ```
 
-Generate missing artifacts with:
+## Leakage Prevention Notes
 
-```bash
-python scripts/run_time_validation.py
-python scripts/run_time_validation_with_history.py
-python scripts/run_intervention_simulation.py
-```
+The primary model excludes:
 
-## Run Tests
+- Review text and review timestamps
+- Current-order review score and review-derived diagnostics
+- Raw high-cardinality identifiers as predictors
+- Actual delivery and lateness fields unavailable before review submission
+- Future outcomes in historical aggregate features
 
-From the project root:
+Historical risk features are computed from strictly earlier `order_purchase_timestamp` buckets. Orders at the same timestamp are excluded from one another's historical rates.
 
-```bash
-python -m pytest -q
-```
+## Portfolio Extensions Completed
 
-Equivalent Makefile command:
+- Notebook-to-package refactor into `src/cx_risk/`
+- Reproducible baseline runner and tests
+- Time-aware future-order validation
+- Leakage-safe historical seller/category/customer-state risk features
+- Intervention simulation for top-k and probability-threshold policies
+- Streamlit dashboard for portfolio presentation
+- Architecture and resume documentation under `docs/`
 
-```bash
-make test
-```
+## Future Work
 
-The tests intentionally stay lightweight and check only critical pipeline invariants:
-
-- required raw files exist
-- loaded tables are non-empty
-- modeling table has unique `order_id`
-- `low_review` exists and has both classes
-- the primary feature list excludes forbidden leakage columns
-
-## Leakage-Safe Primary Modeling
-
-The primary model excludes review-derived fields, target-source fields, raw identifiers, and actual-delivery-derived fields from the feature set. This includes review text, review timestamps, review scores, review diagnostics, actual customer delivery date, carrier handoff date, and lateness-style fields.
-
-The production leakage guard lives in `src/cx_risk/preprocessing.py` and is called before model training in `scripts/run_baseline_pipeline.py`.
-
-## Notebook Artifact
-
-`olist_cx_risk.ipynb` remains the original class-project report. The notebook includes EDA, narrative validation tables, plots, final model artifacts, and interpretation/error-analysis sections that have not all been migrated into reusable modules yet.
-
-## Current Scope
-
-This refactor does not introduce new model families, new features, dashboard code, or inference APIs. It stabilizes the existing notebook logic into reusable Python modules so future portfolio work can proceed safely.
-
-## Limitations
-
-This is an observational project, so the model identifies associations rather than causal drivers. The target is imbalanced, and the leakage-safe design intentionally excludes some highly informative downstream information. Future work should add time-aware validation, historical seller/category risk features computed without future leakage, threshold optimization, intervention simulation, and a small scoring dashboard or packaged inference pipeline.
+- Add calibration diagnostics for predicted probabilities.
+- Add cost-sensitive intervention assumptions and ROI scenarios.
+- Add time-windowed historical aggregates for stronger temporal realism.
+- Package the pipeline with a CLI or lightweight batch scoring entry point.
+- Add dashboard screenshots to `docs/screenshots/`.

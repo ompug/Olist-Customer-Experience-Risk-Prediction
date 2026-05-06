@@ -14,6 +14,7 @@ def _as_1d_array(values, name: str) -> np.ndarray:
 
 
 def compute_lift(y_true, selected_mask) -> float:
+    """Compute selected precision divided by the base positive rate."""
     y_true = _as_1d_array(y_true, "y_true").astype(int)
     selected_mask = _as_1d_array(selected_mask, "selected_mask").astype(bool)
     if len(y_true) != len(selected_mask):
@@ -30,6 +31,7 @@ def compute_lift(y_true, selected_mask) -> float:
 
 
 def summarize_intervention_selection(y_true, selected_mask) -> dict:
+    """Summarize precision, recall, lift, and queue counts for selected rows."""
     y_true = _as_1d_array(y_true, "y_true").astype(int)
     selected_mask = _as_1d_array(selected_mask, "selected_mask").astype(bool)
     if len(y_true) != len(selected_mask):
@@ -67,6 +69,7 @@ def summarize_intervention_selection(y_true, selected_mask) -> dict:
 
 
 def evaluate_top_k_intervention(y_true, y_proba, top_frac: float) -> dict:
+    """Evaluate an intervention queue containing the top fraction by risk score."""
     if not 0 <= top_frac <= 1:
         raise ValueError("top_frac must be between 0 and 1.")
     y_true = _as_1d_array(y_true, "y_true").astype(int)
@@ -91,6 +94,7 @@ def evaluate_top_k_intervention(y_true, y_proba, top_frac: float) -> dict:
 
 
 def build_intervention_curve(y_true, y_proba, top_fracs) -> pd.DataFrame:
+    """Evaluate multiple top-fraction intervention operating points."""
     return pd.DataFrame(
         evaluate_top_k_intervention(y_true, y_proba, top_frac)
         for top_frac in top_fracs
@@ -98,6 +102,7 @@ def build_intervention_curve(y_true, y_proba, top_fracs) -> pd.DataFrame:
 
 
 def evaluate_probability_threshold(y_true, y_proba, threshold: float) -> dict:
+    """Evaluate an intervention queue selected by a probability threshold."""
     if not 0 <= threshold <= 1:
         raise ValueError("threshold must be between 0 and 1.")
     y_true = _as_1d_array(y_true, "y_true").astype(int)
@@ -117,6 +122,7 @@ def evaluate_probability_threshold(y_true, y_proba, threshold: float) -> dict:
 
 
 def evaluate_thresholds(y_true, y_proba, thresholds) -> pd.DataFrame:
+    """Evaluate multiple probability-threshold operating points."""
     return pd.DataFrame(
         evaluate_probability_threshold(y_true, y_proba, threshold)
         for threshold in thresholds

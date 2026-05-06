@@ -17,6 +17,7 @@ from sklearn.metrics import (
 
 
 def compute_classification_metrics(model_name, y_true, y_pred, y_proba):
+    """Compute the shared classification metric record for one model."""
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     return {
         "model": model_name,
@@ -35,6 +36,7 @@ def compute_classification_metrics(model_name, y_true, y_pred, y_proba):
 
 
 def create_model_comparison_table(y_true, model_outputs):
+    """Build a model comparison table from prediction dictionaries."""
     records = [
         compute_classification_metrics(name, y_true, outputs["y_pred"], outputs["y_proba"])
         for name, outputs in model_outputs.items()
@@ -43,6 +45,7 @@ def create_model_comparison_table(y_true, model_outputs):
 
 
 def classification_reports(y_true, model_outputs):
+    """Return sklearn classification reports keyed by model name."""
     reports = {}
     for name, outputs in model_outputs.items():
         report = classification_report(
@@ -58,6 +61,7 @@ def classification_reports(y_true, model_outputs):
 
 
 def confusion_matrices(y_true, model_outputs):
+    """Return raw and normalized confusion matrices keyed by model name."""
     return {
         name: {
             "raw": confusion_matrix(y_true, outputs["y_pred"], labels=[0, 1]),
@@ -68,12 +72,13 @@ def confusion_matrices(y_true, model_outputs):
 
 
 def roc_curve_data(y_true, y_proba):
+    """Return ROC curve points as a DataFrame."""
     fpr, tpr, thresholds = roc_curve(y_true, y_proba)
     return pd.DataFrame({"false_positive_rate": fpr, "true_positive_rate": tpr, "threshold": thresholds})
 
 
 def precision_recall_curve_data(y_true, y_proba):
+    """Return precision-recall curve points as a DataFrame."""
     precision, recall, thresholds = precision_recall_curve(y_true, y_proba)
     threshold_values = np.append(thresholds, np.nan)
     return pd.DataFrame({"precision": precision, "recall": recall, "threshold": threshold_values})
-
