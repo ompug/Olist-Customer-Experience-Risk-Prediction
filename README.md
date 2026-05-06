@@ -197,6 +197,48 @@ outputs/figures/intervention_precision_by_flagged_share.png
 outputs/figures/intervention_lift_by_flagged_share.png
 ```
 
+## Portfolio Extension 4: Streamlit Dashboard
+
+The Streamlit dashboard is a lightweight portfolio-facing results viewer. It does not retrain models on startup. Instead, it reads the generated validation and intervention artifacts from `outputs/tables/` and `outputs/figures/`.
+
+Streamlit is included in `requirements.txt`, so install dependencies first:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the dashboard locally:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Equivalent Makefile command:
+
+```bash
+make app
+```
+
+Expected dashboard artifacts:
+
+```text
+outputs/tables/time_validation_metrics.csv
+outputs/tables/time_validation_with_history_metrics.csv
+outputs/tables/intervention_simulation.csv
+outputs/tables/threshold_analysis.csv
+outputs/figures/intervention_recall_by_flagged_share.png
+outputs/figures/intervention_precision_by_flagged_share.png
+outputs/figures/intervention_lift_by_flagged_share.png
+```
+
+Generate missing artifacts with:
+
+```bash
+python scripts/run_time_validation.py
+python scripts/run_time_validation_with_history.py
+python scripts/run_intervention_simulation.py
+```
+
 ## Run Tests
 
 From the project root:

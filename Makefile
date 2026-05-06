@@ -1,4 +1,4 @@
-.PHONY: baseline time-validation time-validation-history intervention test clean-outputs
+.PHONY: baseline time-validation time-validation-history intervention app test clean-outputs
 
 baseline:
 	python scripts/run_baseline_pipeline.py
@@ -11,6 +11,9 @@ time-validation-history:
 
 intervention:
 	python scripts/run_intervention_simulation.py
+
+app:
+	streamlit run app/streamlit_app.py
 
 test:
 	python -m pytest -q
