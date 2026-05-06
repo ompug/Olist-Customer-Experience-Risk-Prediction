@@ -99,6 +99,30 @@ The script loads raw data, builds the order-level modeling table, applies the le
 - Random Forest
 - HistGradientBoostingClassifier
 
+## Portfolio Extension 1: Time-Aware Validation
+
+The original baseline keeps the random stratified train/test split so results remain comparable to the notebook. Random splits can be optimistic for this business problem because orders from earlier and later periods are mixed across train and test sets, which can hide drift in customer behavior, logistics, product mix, or seller performance.
+
+Time-aware validation trains on the earliest 80% of reviewed delivered orders by `order_purchase_timestamp` and tests on the latest 20%. This better simulates deployment, where a model trained on historical orders must score future orders. The timestamp is used only to create the split and is not included as a raw predictor.
+
+Run it from the project root:
+
+```bash
+python scripts/run_time_validation.py
+```
+
+Equivalent Makefile command:
+
+```bash
+make time-validation
+```
+
+The time-validation metrics are saved to:
+
+```text
+outputs/tables/time_validation_metrics.csv
+```
+
 ## Run Tests
 
 From the project root:

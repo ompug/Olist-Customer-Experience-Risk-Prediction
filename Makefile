@@ -1,7 +1,10 @@
-.PHONY: baseline test clean-outputs
+.PHONY: baseline time-validation test clean-outputs
 
 baseline:
 	python scripts/run_baseline_pipeline.py
+
+time-validation:
+	python scripts/run_time_validation.py
 
 test:
 	python -m pytest -q

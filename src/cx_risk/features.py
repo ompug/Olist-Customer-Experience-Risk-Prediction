@@ -207,7 +207,11 @@ def add_engineered_features(model_df: pd.DataFrame) -> pd.DataFrame:
     return features_df
 
 
-def build_modeling_dataframe(tables: dict[str, pd.DataFrame], include_order_id: bool = False) -> pd.DataFrame:
+def build_modeling_dataframe(
+    tables: dict[str, pd.DataFrame],
+    include_order_id: bool = False,
+    include_split_timestamp: bool = False,
+) -> pd.DataFrame:
     reviews = deduplicate_reviews(tables["order_reviews"])
     model_df = build_orders_base(tables["orders"], reviews)
     model_df = model_df.drop(
@@ -237,7 +241,12 @@ def build_modeling_dataframe(tables: dict[str, pd.DataFrame], include_order_id: 
     features_df = add_engineered_features(model_df)
     from .preprocessing import PRIMARY_FEATURE_COLUMNS
 
-    columns = (["order_id"] if include_order_id else []) + PRIMARY_FEATURE_COLUMNS + [TARGET_COLUMN]
+    columns = (
+        (["order_id"] if include_order_id else [])
+        + (["order_purchase_timestamp"] if include_split_timestamp else [])
+        + PRIMARY_FEATURE_COLUMNS
+        + [TARGET_COLUMN]
+    )
     missing = [column for column in columns if column not in features_df.columns]
     if missing:
         raise ValueError(f"Missing expected engineered feature columns: {missing}")
@@ -245,4 +254,3 @@ def build_modeling_dataframe(tables: dict[str, pd.DataFrame], include_order_id: 
     if include_order_id:
         require_unique_key(output, "order_id", "modeling dataframe")
     return output
-

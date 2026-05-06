@@ -10,6 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "olist_data"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 FIGURES_DIR = OUTPUT_DIR / "figures"
+TABLES_DIR = OUTPUT_DIR / "tables"
 
 DATA_FILES = {
     "customers": "olist_customers_dataset.csv",
@@ -34,4 +35,3 @@ DATETIME_COLUMNS = {
     "order_items": ["shipping_limit_date"],
     "order_reviews": ["review_creation_date", "review_answer_timestamp"],
 }
-

@@ -12,6 +12,7 @@ from cx_risk.preprocessing import (
     assert_no_forbidden_columns,
     validate_primary_feature_list,
 )
+from cx_risk.validation import temporal_train_test_split
 
 
 def test_required_files_exist():
@@ -36,3 +37,20 @@ def test_modeling_table_target_and_unique_order_id():
 def test_primary_features_exclude_forbidden_leakage_columns():
     validate_primary_feature_list()
     assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS)
+
+
+def test_temporal_split_preserves_chronology_and_target_classes():
+    tables = load_raw_data(DATA_DIR)
+    modeling_df = build_modeling_dataframe(tables, include_split_timestamp=True)
+    X_train, X_test, y_train, y_test, summary = temporal_train_test_split(
+        modeling_df,
+        return_summary=True,
+    )
+
+    assert not X_train.empty
+    assert not X_test.empty
+    assert summary.train_end < summary.test_start
+    assert set(y_train.unique()) == {0, 1}
+    assert set(y_test.unique()) == {0, 1}
+    assert_no_forbidden_columns(X_train.columns)
+    assert_no_forbidden_columns(X_test.columns)
