@@ -158,6 +158,45 @@ Metrics are saved to:
 outputs/tables/time_validation_with_history_metrics.csv
 ```
 
+## Portfolio Extension 3: Intervention Simulation
+
+Default `0.5` classification thresholds are not enough for an intervention workflow. A support or operations team usually has limited capacity and needs to prioritize a queue of the riskiest future orders, not classify every order with a generic threshold.
+
+This project simulates top-k intervention policies using the time-aware model with historical features. For each model, it evaluates what happens if the business flags the top 1%, 5%, 10%, 15%, 20%, or 25% riskiest future orders. It also evaluates fixed probability thresholds from 0.05 to 0.50.
+
+In this context:
+
+- Precision answers: among flagged orders, what share actually became low-review orders?
+- Recall answers: what share of all future low-review orders did the queue catch?
+- Lift answers: how much better the queue precision is than random selection at the same base rate.
+
+Run the intervention simulation:
+
+```bash
+python scripts/run_intervention_simulation.py
+```
+
+Equivalent Makefile command:
+
+```bash
+make intervention
+```
+
+Output tables:
+
+```text
+outputs/tables/intervention_simulation.csv
+outputs/tables/threshold_analysis.csv
+```
+
+Output figures:
+
+```text
+outputs/figures/intervention_recall_by_flagged_share.png
+outputs/figures/intervention_precision_by_flagged_share.png
+outputs/figures/intervention_lift_by_flagged_share.png
+```
+
 ## Run Tests
 
 From the project root:
