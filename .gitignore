@@ -14,6 +14,8 @@ env/
 # Local environment
 .env
 .env.*
+.streamlit/secrets.toml
+.streamlit/cache/
 
 # Generated artifacts
 outputs/*.pkl
@@ -23,6 +25,7 @@ outputs/figures/*.png
 outputs/figures/*.jpg
 outputs/figures/*.jpeg
 outputs/figures/*.svg
+!outputs/figures/intervention_*.png
 
 # OS and editor files
 .DS_Store
