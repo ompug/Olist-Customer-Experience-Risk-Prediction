@@ -65,7 +65,10 @@ def test_add_reason_codes_to_queue_preserves_row_order():
 
 
 class ToyProbabilityModel:
+    _estimator_type = "classifier"
+
     def fit(self, X, y):
+        self.classes_ = np.array([0, 1])
         return self
 
     def predict_proba(self, X):
