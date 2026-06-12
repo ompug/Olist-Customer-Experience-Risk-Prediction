@@ -95,6 +95,19 @@ HISTORICAL_FEATURE_COLUMNS = [
     "customer_state_prior_low_review_rate",
 ]
 
+ENHANCED_HISTORICAL_FEATURE_COLUMNS = [
+    "seller_state_prior_order_count",
+    "seller_state_prior_low_review_rate",
+    "category_state_prior_order_count",
+    "category_state_prior_low_review_rate",
+    "payment_profile_prior_order_count",
+    "payment_profile_prior_low_review_rate",
+    "product_volume_tier_prior_order_count",
+    "product_volume_tier_prior_low_review_rate",
+    "purchase_month_prior_order_count",
+    "purchase_month_prior_low_review_rate",
+]
+
 FORBIDDEN_LEAKAGE_COLUMNS = [
     "review_id",
     "review_score",
@@ -146,11 +159,17 @@ def validate_primary_feature_list() -> None:
     assert_no_forbidden_columns(PRIMARY_FEATURE_COLUMNS, include_raw_ids=True)
 
 
-def get_primary_feature_columns(include_historical_features: bool = False) -> list[str]:
+def get_primary_feature_columns(
+    include_historical_features: bool = False,
+    include_enhanced_historical_features: bool = False,
+) -> list[str]:
     """Return model feature columns, optionally including historical features."""
+    include_historical_features = include_historical_features or include_enhanced_historical_features
     feature_columns = list(PRIMARY_FEATURE_COLUMNS)
     if include_historical_features:
         feature_columns.extend(HISTORICAL_FEATURE_COLUMNS)
+    if include_enhanced_historical_features:
+        feature_columns.extend(ENHANCED_HISTORICAL_FEATURE_COLUMNS)
     assert_no_forbidden_columns(feature_columns, include_raw_ids=True)
     return feature_columns
 

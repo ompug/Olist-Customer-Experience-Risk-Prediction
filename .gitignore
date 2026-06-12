@@ -21,11 +21,30 @@ env/
 outputs/*.pkl
 outputs/*.joblib
 outputs/*.csv
+outputs/models/*.joblib
+outputs/models/*.json
+outputs/tables/risk_queue.csv
+outputs/tables/global_feature_importance.csv
+outputs/tables/global_feature_importance_top20.csv
+outputs/tables/business_value_simulation.csv
+outputs/tables/business_value_sensitivity.csv
+outputs/tables/rolling_backtest_metrics.csv
+outputs/tables/calibration_metrics.csv
+outputs/tables/calibration_bins.csv
+outputs/tables/segment_performance.csv
+outputs/tables/feature_drift_report.csv
+outputs/tables/model_lift_experiments.csv
+outputs/tables/model_lift_topk.csv
+outputs/tables/model_lift_feature_sets.csv
+outputs/*.db
+outputs/*.sqlite
+outputs/*.sqlite3
 outputs/figures/*.png
 outputs/figures/*.jpg
 outputs/figures/*.jpeg
 outputs/figures/*.svg
 !outputs/figures/intervention_*.png
+!outputs/models/.gitkeep
 
 # OS and editor files
 .DS_Store

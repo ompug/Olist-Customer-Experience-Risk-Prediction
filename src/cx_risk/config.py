@@ -11,6 +11,7 @@ DATA_DIR = PROJECT_ROOT / "olist_data"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 FIGURES_DIR = OUTPUT_DIR / "figures"
 TABLES_DIR = OUTPUT_DIR / "tables"
+MODEL_DIR = OUTPUT_DIR / "models"
 
 DATA_FILES = {
     "customers": "olist_customers_dataset.csv",

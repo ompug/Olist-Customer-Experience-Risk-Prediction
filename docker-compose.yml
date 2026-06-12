@@ -1,0 +1,8 @@
+services:
+  scoring-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./olist_data:/app/olist_data:ro

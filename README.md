@@ -51,6 +51,12 @@ The dashboard shows:
 - Historical-feature comparison
 - Intervention simulation curves
 - Threshold tradeoff analysis
+- Production-style risk queue workflow
+- Explainability with model drivers and per-order reason codes
+- Business-value scenario simulator for intervention strategies
+- Monitoring views for rolling validation, calibration, segments, and drift
+- Model-lift experiments for enhanced features, calibration, and top-k ranking metrics
+- FastAPI scoring service with SQLite score persistence and container support
 - Reproducibility commands
 
 Screenshots are not fabricated in this repo. To add them:
@@ -73,6 +79,12 @@ docs/screenshots/
 - Preserved the original random-split baseline while adding more realistic future-order validation.
 - Built leakage-safe historical seller, category, and customer-state risk features using only strictly prior orders.
 - Added threshold and top-k intervention simulation to translate probabilities into business actions.
+- Added train/save/score workflow for a production-style holdout risk queue.
+- Added permutation-importance model drivers and rule-based reason codes for queued orders.
+- Added business-value scenario modeling for intervention costs, expected saves, ROI, and break-even rates.
+- Added rolling monitoring artifacts for validation stability, calibration, segment performance, and drift.
+- Added model-lift experiments for enhanced leakage-safe features, calibrated variants, and ranking-first metrics.
+- Added FastAPI scoring endpoints, local SQLite score persistence, and Docker deployment files.
 - Shipped a lightweight Streamlit dashboard that reads artifacts without retraining models at startup.
 
 ## Dataset
@@ -156,12 +168,15 @@ ML_FINAL_PROJECT/
 |-- olist_data/                  # Raw Olist CSV files, gitignored
 |-- outputs/
 |   |-- figures/                 # Saved notebook and portfolio figures
+|   |-- models/                  # Generated model artifacts, gitignored
 |   `-- tables/                  # Validation and intervention CSV artifacts
 |-- scripts/
 |   |-- run_baseline_pipeline.py
 |   |-- run_time_validation.py
 |   |-- run_time_validation_with_history.py
-|   `-- run_intervention_simulation.py
+|   |-- run_intervention_simulation.py
+|   |-- train_scoring_models.py
+|   `-- score_holdout_queue.py
 |-- src/
 |   `-- cx_risk/                 # Reusable ML pipeline package
 |-- tests/
@@ -195,6 +210,11 @@ make baseline
 make time-validation
 make time-validation-history
 make intervention
+make business-value
+make monitoring
+make model-lift
+make risk-queue
+make api
 make app
 make test
 ```
@@ -206,6 +226,12 @@ python scripts/run_baseline_pipeline.py
 python scripts/run_time_validation.py
 python scripts/run_time_validation_with_history.py
 python scripts/run_intervention_simulation.py
+python scripts/run_business_value_simulation.py
+python scripts/run_monitoring.py
+python scripts/run_model_lift_experiments.py
+python scripts/train_scoring_models.py
+python scripts/score_holdout_queue.py
+uvicorn cx_risk_api.main:app --app-dir src --reload --host 0.0.0.0 --port 8000
 streamlit run app/streamlit_app.py
 python -m pytest -q
 ```
@@ -221,15 +247,34 @@ python -m pytest -q
 make time-validation
 make time-validation-history
 make intervention
+make business-value
+make monitoring
+make model-lift
+make risk-queue
 ```
 
 Key artifacts:
 
 ```text
+outputs/models/model_registry.json
+outputs/models/*.joblib
 outputs/tables/time_validation_metrics.csv
 outputs/tables/time_validation_with_history_metrics.csv
 outputs/tables/intervention_simulation.csv
 outputs/tables/threshold_analysis.csv
+outputs/tables/risk_queue.csv
+outputs/tables/global_feature_importance.csv
+outputs/tables/global_feature_importance_top20.csv
+outputs/tables/business_value_simulation.csv
+outputs/tables/business_value_sensitivity.csv
+outputs/tables/rolling_backtest_metrics.csv
+outputs/tables/calibration_metrics.csv
+outputs/tables/calibration_bins.csv
+outputs/tables/segment_performance.csv
+outputs/tables/feature_drift_report.csv
+outputs/tables/model_lift_experiments.csv
+outputs/tables/model_lift_topk.csv
+outputs/tables/model_lift_feature_sets.csv
 outputs/figures/intervention_recall_by_flagged_share.png
 outputs/figures/intervention_precision_by_flagged_share.png
 outputs/figures/intervention_lift_by_flagged_share.png
@@ -247,6 +292,68 @@ The primary model excludes:
 
 Historical risk features are computed from strictly earlier `order_purchase_timestamp` buckets. Orders at the same timestamp are excluded from one another's historical rates.
 
+## Risk Queue Workflow
+
+Generate production-style scoring artifacts with:
+
+```bash
+make risk-queue
+```
+
+This trains all three baseline model families on earlier orders with leakage-safe historical features, saves fitted pipelines under `outputs/models/`, scores the future holdout window, and writes `outputs/tables/risk_queue.csv`.
+
+The holdout labels are included only as evaluation columns after scoring. They are not used as model inputs.
+
+The same command also writes model-driver artifacts under `outputs/tables/global_feature_importance*.csv`. These use permutation importance on the future holdout set. Per-order queue reasons are rule-based operational explanations from leakage-safe order attributes; they are not SHAP values or causal explanations.
+
+## Business Value Workflow
+
+Generate default business-value scenarios after intervention artifacts exist:
+
+```bash
+make intervention
+make business-value
+```
+
+This writes `outputs/tables/business_value_simulation.csv` and `outputs/tables/business_value_sensitivity.csv`. The scenario simulator estimates expected saved low reviews, intervention costs, gross value, net value, ROI, and break-even save rates from explicit assumptions. These are planning scenarios, not measured causal intervention effects.
+
+## Monitoring Workflow
+
+Generate rolling validation and monitoring artifacts with:
+
+```bash
+make monitoring
+```
+
+This runs expanding-window temporal backtests with leakage-safe historical features and writes rolling metrics, calibration summaries, calibration bins, segment performance, and feature drift reports under `outputs/tables/`.
+
+The model card in `docs/model_card.md` summarizes intended use, leakage boundaries, validation design, and limitations.
+
+## Model Lift Workflow
+
+Run ranking-focused model and feature experiments with:
+
+```bash
+make model-lift
+```
+
+This compares the current historical feature set with enhanced leakage-safe historical features, evaluates calibrated model variants, and writes top-k ranking metrics under `outputs/tables/model_lift_*.csv`.
+
+These are candidate experiments. They should not replace the production queue default unless they improve the relevant ranking metrics, especially lift and precision at the intended queue size.
+
+## API Workflow
+
+Generate model artifacts, then start the local scoring API:
+
+```bash
+make risk-queue
+make api
+```
+
+The API exposes health, model metadata, single scoring, batch scoring, and recent score history. It scores engineered feature payloads that match `outputs/models/model_registry.json`; raw Olist relational records should still be processed through the existing batch pipelines.
+
+Example requests are documented in `docs/api_examples.md`. The API persists score records to `outputs/scoring_api.db`.
+
 ## Portfolio Extensions Completed
 
 - Notebook-to-package refactor into `src/cx_risk/`
@@ -254,6 +361,12 @@ Historical risk features are computed from strictly earlier `order_purchase_time
 - Time-aware future-order validation
 - Leakage-safe historical seller/category/customer-state risk features
 - Intervention simulation for top-k and probability-threshold policies
+- Production-style model artifacts and holdout risk queue
+- Explainability artifacts with permutation importance and per-order reason codes
+- Business-value scenario simulator for intervention strategies
+- Monitoring artifacts and model card documentation
+- Model-lift experiments for ranking-quality improvement
+- FastAPI scoring service and SQLite score persistence
 - Streamlit dashboard for portfolio presentation
 - Architecture and resume documentation under `docs/`
 

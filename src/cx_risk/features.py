@@ -221,8 +221,10 @@ def build_modeling_dataframe(
     include_order_id: bool = False,
     include_split_timestamp: bool = False,
     include_historical_features: bool = False,
+    include_enhanced_historical_features: bool = False,
 ) -> pd.DataFrame:
     """Build the selected order-level modeling table for scripts and tests."""
+    include_historical_features = include_historical_features or include_enhanced_historical_features
     reviews = deduplicate_reviews(tables["order_reviews"])
     model_df = build_orders_base(tables["orders"], reviews)
     model_df = model_df.drop(
@@ -251,14 +253,17 @@ def build_modeling_dataframe(
 
     features_df = add_engineered_features(model_df)
     if include_historical_features:
-        from .historical import add_historical_risk_features
+        from .historical import add_enhanced_historical_risk_features, add_historical_risk_features
 
         features_df = add_historical_risk_features(features_df)
+        if include_enhanced_historical_features:
+            features_df = add_enhanced_historical_risk_features(features_df)
 
     from .preprocessing import get_primary_feature_columns
 
     feature_columns = get_primary_feature_columns(
         include_historical_features=include_historical_features,
+        include_enhanced_historical_features=include_enhanced_historical_features,
     )
 
     columns = (

@@ -14,6 +14,19 @@ HISTORICAL_FEATURE_COLUMNS = [
     "customer_state_prior_low_review_rate",
 ]
 
+ENHANCED_HISTORICAL_FEATURE_COLUMNS = [
+    "seller_state_prior_order_count",
+    "seller_state_prior_low_review_rate",
+    "category_state_prior_order_count",
+    "category_state_prior_low_review_rate",
+    "payment_profile_prior_order_count",
+    "payment_profile_prior_low_review_rate",
+    "product_volume_tier_prior_order_count",
+    "product_volume_tier_prior_low_review_rate",
+    "purchase_month_prior_order_count",
+    "purchase_month_prior_low_review_rate",
+]
+
 
 def _add_prior_group_rate_features(
     frame: pd.DataFrame,
@@ -110,5 +123,72 @@ def add_historical_risk_features(
         timestamp_column=timestamp_column,
         target_column=target_column,
         prefix="customer_state",
+    )
+    return output
+
+
+def add_enhanced_historical_risk_features(
+    frame: pd.DataFrame,
+    timestamp_column: str = "order_purchase_timestamp",
+    target_column: str = TARGET_COLUMN,
+) -> pd.DataFrame:
+    """Add additional strictly-prior risk aggregates for model-lift experiments."""
+    output = frame.copy()
+    output["seller_state_history_key"] = output["primary_seller_state"]
+    output["category_state_history_key"] = (
+        output["primary_category"].astype("string").fillna("missing")
+        + "|"
+        + output["customer_state"].astype("string").fillna("missing")
+    )
+    output["payment_profile_history_key"] = np.select(
+        [
+            output.get("has_boleto", pd.Series(0, index=output.index)).fillna(0).astype(bool),
+            output.get("high_installment_flag", pd.Series(0, index=output.index)).fillna(0).astype(bool),
+            output.get("has_credit_card", pd.Series(0, index=output.index)).fillna(0).astype(bool),
+        ],
+        ["boleto", "high_installment", "credit_card"],
+        default="other",
+    )
+    output["product_volume_tier_history_key"] = pd.cut(
+        output.get("avg_product_volume_cm3_safe", pd.Series(np.nan, index=output.index)),
+        bins=[-np.inf, 1_000, 10_000, 50_000, np.inf],
+        labels=["tiny", "small", "medium", "large"],
+    ).astype("string")
+    output["purchase_month_history_key"] = output["purchase_month"].astype("string")
+
+    output = _add_prior_group_rate_features(
+        output,
+        group_column="seller_state_history_key",
+        timestamp_column=timestamp_column,
+        target_column=target_column,
+        prefix="seller_state",
+    )
+    output = _add_prior_group_rate_features(
+        output,
+        group_column="category_state_history_key",
+        timestamp_column=timestamp_column,
+        target_column=target_column,
+        prefix="category_state",
+    )
+    output = _add_prior_group_rate_features(
+        output,
+        group_column="payment_profile_history_key",
+        timestamp_column=timestamp_column,
+        target_column=target_column,
+        prefix="payment_profile",
+    )
+    output = _add_prior_group_rate_features(
+        output,
+        group_column="product_volume_tier_history_key",
+        timestamp_column=timestamp_column,
+        target_column=target_column,
+        prefix="product_volume_tier",
+    )
+    output = _add_prior_group_rate_features(
+        output,
+        group_column="purchase_month_history_key",
+        timestamp_column=timestamp_column,
+        target_column=target_column,
+        prefix="purchase_month",
     )
     return output
