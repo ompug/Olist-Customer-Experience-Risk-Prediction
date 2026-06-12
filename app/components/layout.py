@@ -2,12 +2,30 @@
 
 from __future__ import annotations
 
+import base64
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import streamlit as st
 
 import design
+
+ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets"
+
+_MIME_BY_SUFFIX = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+
+
+@lru_cache(maxsize=8)
+def asset_data_uri(filename: str) -> Optional[str]:
+    """Return a data URI for a bundled asset, or None when it is missing."""
+    path = ASSETS_DIR / filename
+    if not path.exists():
+        return None
+    mime = _MIME_BY_SUFFIX.get(path.suffix.lower(), "image/png")
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{encoded}"
 
 _CSS = f"""
 <style>
@@ -55,9 +73,13 @@ _CSS = f"""
 .cx-hero {{
     background: linear-gradient(135deg, {design.NAVY} 0%, #2C4F7C 100%);
     border-radius: 14px;
-    padding: 3rem 3rem 2.6rem 3rem;
+    padding: 3.4rem 3rem 3rem 3rem;
     margin-bottom: 1.6rem;
     color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 300px;
 }}
 
 .cx-hero-name {{
@@ -138,11 +160,19 @@ def page_header(title: str, subtitle: Optional[str] = None, tech_note: Optional[
         st.markdown(f'<p class="cx-technote">{tech_note}</p>', unsafe_allow_html=True)
 
 
-def hero(name: str, tagline: str, positioning: str) -> None:
-    """Render the landing-page hero band."""
+def hero(name: str, tagline: str, positioning: str, background_asset: Optional[str] = None) -> None:
+    """Render the landing-page hero band, optionally over a brand illustration."""
+    style = ""
+    background = asset_data_uri(background_asset) if background_asset else None
+    if background:
+        style = (
+            "background:"
+            "linear-gradient(100deg, rgba(24,42,74,0.94) 30%, rgba(24,42,74,0.55) 58%, rgba(24,42,74,0.08)),"
+            f"url('{background}') center right / cover no-repeat;"
+        )
     st.markdown(
         f"""
-        <div class="cx-hero">
+        <div class="cx-hero" style="{style}">
             <p class="cx-hero-name">{name}</p>
             <p class="cx-hero-tagline">{tagline}</p>
             <p class="cx-hero-positioning">{positioning}</p>

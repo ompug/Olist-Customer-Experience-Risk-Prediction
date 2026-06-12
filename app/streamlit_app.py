@@ -18,8 +18,11 @@ import streamlit as st
 
 import design
 
+_LOGO_PATH = _APP_DIR / "assets" / "lighthouse_logo.png"
+
 st.set_page_config(
     page_title=f"{design.PRODUCT_NAME} - CX Risk Radar",
+    page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -32,6 +35,8 @@ inject_css()
 navigation = st.navigation(GROUPS)
 
 with st.sidebar:
+    if _LOGO_PATH.exists():
+        st.image(str(_LOGO_PATH), width=88)
     st.markdown(f"**{design.PRODUCT_NAME}**")
     st.caption(design.PRODUCT_TAGLINE)
     st.caption(

@@ -47,7 +47,12 @@ def _headline_stats() -> Optional[dict]:
 
 
 def render() -> None:
-    hero(design.PRODUCT_NAME, design.PRODUCT_TAGLINE, design.PRODUCT_POSITIONING)
+    hero(
+        design.PRODUCT_NAME,
+        design.PRODUCT_TAGLINE,
+        design.PRODUCT_POSITIONING,
+        background_asset="lighthouse_hero.jpg",
+    )
 
     stats = _headline_stats()
     column_1, column_2, column_3 = st.columns(3)

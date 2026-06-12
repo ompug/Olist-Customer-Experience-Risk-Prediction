@@ -89,16 +89,21 @@ def require_artifacts(paths: list[Path], context: str = "") -> bool:
             commands.append(command)
 
     with st.container(border=True):
-        st.subheader("Pipeline artifacts needed")
-        message = "This page reads precomputed artifacts that have not been generated yet."
-        if context:
-            message = f"{message} {context}"
-        st.markdown(message)
-        st.code("\n".join(commands), language="bash")
-        st.caption(
-            "Run from the project root with the raw Olist CSVs in `olist_data/`. "
-            "The full pipeline guide lives on the Monitoring & Methodology page."
-        )
+        illustration_column, text_column = st.columns([1, 4])
+        illustration = Path(__file__).resolve().parents[1] / "assets" / "lighthouse_empty.png"
+        if illustration.exists():
+            illustration_column.image(str(illustration), use_container_width=True)
+        with text_column:
+            st.subheader("Pipeline artifacts needed")
+            message = "This page reads precomputed artifacts that have not been generated yet."
+            if context:
+                message = f"{message} {context}"
+            st.markdown(message)
+            st.code("\n".join(commands), language="bash")
+            st.caption(
+                "Run from the project root with the raw Olist CSVs in `olist_data/`. "
+                "The full pipeline guide lives on the Reliability & Methods page."
+            )
     return False
 
 
