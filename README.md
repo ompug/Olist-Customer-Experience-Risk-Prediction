@@ -44,20 +44,19 @@ or:
 streamlit run app/streamlit_app.py
 ```
 
-The dashboard shows:
+The dashboard ships as **Lighthouse** - "See bad customer experiences coming, before the review lands." It is a multipage Streamlit app (`st.navigation`) designed for two audiences at once: every page leads with the business story and keeps the technical detail one layer down (subtitles, tooltips, expanders).
 
-- Project overview and leakage-safe design
-- Time-aware validation results
-- Historical-feature comparison
-- Intervention simulation curves
-- Threshold tradeoff analysis
-- Production-style risk queue workflow
-- Explainability with model drivers and per-order reason codes
-- Business-value scenario simulator for intervention strategies
-- Monitoring views for rolling validation, calibration, segments, and drift
-- Model-lift experiments for enhanced features, calibration, and top-k ranking metrics
-- FastAPI scoring service with SQLite score persistence and container support
-- Reproducibility commands
+Seven pages:
+
+- **Welcome** - the title page: product hero, live proof-strip stats, audience-specific entry points, and a three-step how-it-works
+- **Results Overview** - headline KPIs and the queue-concentration curve with the 10% operating point
+- **Intervention Queue** - the operations product: filterable ranked queue, risk-band badges, order drill-down with reasons, CSV export
+- **Model Performance** - time-aware validation, queue operating curves, threshold tradeoffs, calibration, and model-lift experiments
+- **Why Orders Get Flagged** - permutation-importance drivers, feature-family breakdown, queue reason distribution, and excluded-signal notes
+- **ROI Planner** - interactive scenario simulator with adjustable cost/save-rate/value assumptions and a save-rate sensitivity heatmap
+- **Reliability & Methods** - rolling backtests, segment diagnostics, feature drift, leakage methodology, and reproduction guide
+
+The app is read-only over pipeline artifacts: it never trains or scores models itself. Pages with missing artifacts show a single instruction card with the `make` command that generates them. Charts use Plotly with a shared chart factory (`app/charts.py`) and a consistent risk-band color system and brand tokens (`app/design.py`).
 
 Screenshots are not fabricated in this repo. To add them:
 
@@ -160,7 +159,12 @@ These metrics should be interpreted as prioritization quality, not a claim of ca
 ```text
 ML_FINAL_PROJECT/
 |-- app/
-|   `-- streamlit_app.py
+|   |-- streamlit_app.py         # Thin entry: navigation + theme
+|   |-- navigation.py            # Page definitions and nav groups
+|   |-- charts.py                # Plotly chart factory
+|   |-- design.py                # Design tokens and brand strings
+|   |-- components/              # Artifact loaders, layout primitives
+|   `-- views/                   # One module per dashboard page
 |-- docs/
 |   |-- architecture.md
 |   |-- resume_bullets.md
