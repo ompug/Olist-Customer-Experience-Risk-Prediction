@@ -1,6 +1,8 @@
 # Olist Customer-Experience Risk Prediction
 
-Leakage-aware machine learning pipeline and Streamlit dashboard for predicting low-review risk on future e-commerce orders.
+![Lighthouse - see bad customer experiences coming, before the review lands](app/assets/lighthouse_hero.jpg)
+
+Leakage-aware machine learning pipeline and **Lighthouse**, a Streamlit dashboard for predicting low-review risk on future e-commerce orders.
 
 ## One-Sentence Summary
 
